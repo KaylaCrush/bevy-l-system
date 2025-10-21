@@ -1,0 +1,9 @@
+[package]
+name = "bevy_lsystem"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bevy = {version = "0.17"}
+bevy_prototype_lyon = "0.15"
+bevy_egui = "0.38.0"
