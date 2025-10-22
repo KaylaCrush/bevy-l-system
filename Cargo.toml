@@ -7,3 +7,4 @@ edition = "2024"
 bevy = {version = "0.17"}
 bevy_prototype_lyon = "0.15"
 bevy_egui = "0.38.0"
+rand = "0.9"
