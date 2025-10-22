@@ -1,22 +1,11 @@
 use bevy::{
     asset::RenderAssetUsages,
-    mesh::{Indices, VertexAttributeValues},
+    mesh::{Indices},
     prelude::*,
     render::render_resource::PrimitiveTopology,
 };
 
-use bevy_prototype_lyon::prelude::*;
 use crate::plant::Plant;
-
-
-// Green color
-const GREEN: Srgba = bevy::color::palettes::css::GREEN;
-
-#[derive(Clone, Copy)]
-struct Segment{
-    start: Vec3,
-    end: Vec3,
-}
 
 #[derive(Clone, Copy)]
 struct Turtle3D {
@@ -24,27 +13,38 @@ struct Turtle3D {
     rot: Quat,
 }
 
-fn interpret_plant_string_3d(lsystem_string: &str, step_size: f32, turn_angle: f32) -> Vec<Segment> {
-    let mut turtle_pos = Vec3::ZERO;
-    let mut turtle_rot = Quat::from_rotation_y(0.0); // Or use Euler angles
+#[derive(Clone, Copy)]
+struct Segment{
+    start: Vec3,
+    end: Vec3,
+}
+
+fn interpret_plant_string_3d(lsystem_string: &str, step_size: f32, turn_angle_deg: f32) -> Vec<Segment> {
+    let mut turtle = Turtle3D {
+        pos: Vec3::ZERO,
+        rot: Quat::IDENTITY, // facing +Y
+    };
     let mut stack = Vec::new();
     let mut segments = Vec::new();
+
+    let turn_rad = turn_angle_deg.to_radians();
 
     for c in lsystem_string.chars() {
         match c {
             'F' => {
-                let new_pos = turtle_pos + turtle_rot * Vec3::Z * step_size;
-                segments.push(Segment { start: turtle_pos, end: new_pos });
-                turtle_pos = new_pos;
+                // Move forward along local Y
+                let new_pos = turtle.pos + turtle.rot * Vec3::Y * step_size;
+                segments.push(Segment { start: turtle.pos, end: new_pos });
+                turtle.pos = new_pos;
             }
-            '+' => turtle_rot *= Quat::from_rotation_y(turn_angle.to_radians()),
-            '-' => turtle_rot *= Quat::from_rotation_y(-turn_angle.to_radians()),
-            '[' => stack.push((turtle_pos, turtle_rot)),
-            ']' => {
-                let (pos, rot) = stack.pop().unwrap();
-                turtle_pos = pos;
-                turtle_rot = rot;
-            }
+            '+' => turtle.rot *= Quat::from_rotation_z(-turn_rad), // roll clockwise
+            '-' => turtle.rot *= Quat::from_rotation_z(turn_rad),  // roll counter-clockwise
+            '&' => turtle.rot *= Quat::from_rotation_x(turn_rad),  // pitch down
+            '^' => turtle.rot *= Quat::from_rotation_x(-turn_rad), // pitch up
+            '\\' => turtle.rot *= Quat::from_rotation_y(turn_rad), // yaw left
+            '/' => turtle.rot *= Quat::from_rotation_y(-turn_rad), // yaw right
+            '[' => stack.push(turtle),
+            ']' => turtle = stack.pop().unwrap(),
             _ => {}
         }
     }
@@ -67,13 +67,6 @@ fn build_segment_mesh(segments: &[Segment]) -> Mesh {
     mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
     mesh.insert_indices(Indices::U32(indices));
     mesh
-}
-
-
-#[derive(Clone, Copy)]
-struct Turtle {
-    pos: Vec2,
-    angle: f32,
 }
 
 pub fn draw_plant(
@@ -104,50 +97,3 @@ pub fn draw_plant(
         ));
     }
 }
-
-
-
-// pub fn draw_plant(mut commands: Commands, plants: Query<(Entity, &Plant)>) {
-//     for (entity, plant) in &plants {
-//         // Remove existing children (previously drawn shapes)
-//         commands.entity(entity).despawn_children();
-
-//         // Interpret L-System string into a ShapePath
-//         let path = interpret_plant_string(&plant.current_string, plant.step_size, plant.lsystem.angle);
-
-//         commands.spawn((
-//             ShapeBuilder::with(&path)
-//                 .stroke((GREEN, 3.0))
-//                 .build(),
-//             ChildOf(entity),
-//         ));
-//     }
-// }
-
-fn interpret_plant_string(lsystem_string: &str, step_size: f32, turn_angle: f32) -> ShapePath {
-    let mut turtle = Turtle { pos: Vec2::ZERO, angle: 90.0 };
-    let mut stack = Vec::new();
-    let mut path = ShapePath::new();
-    path = path.move_to(turtle.pos);
-
-    for c in lsystem_string.chars() {
-        match c {
-            'F' => {
-                let rad = turtle.angle.to_radians();
-                let new_pos = turtle.pos + Vec2::new(rad.cos(), rad.sin()) * step_size;
-                path = path.line_to(new_pos);
-                turtle.pos = new_pos;
-            }
-            '+' => turtle.angle += turn_angle,
-            '-' => turtle.angle -= turn_angle,
-            '[' => stack.push(turtle),
-            ']' => {
-                turtle = stack.pop().unwrap();
-                path = path.move_to(turtle.pos);
-            }
-            _ => {}
-        }
-    }
-    path
-}
-

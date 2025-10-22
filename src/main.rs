@@ -1,4 +1,4 @@
-use bevy::{input::common_conditions::input_just_pressed, prelude::*};
+use bevy::{input::common_conditions::input_just_pressed, math::VectorSpace, prelude::*};
 use bevy_prototype_lyon::prelude::*;
 use bevy_egui::{EguiPlugin, EguiPrimaryContextPass};
 
@@ -25,7 +25,21 @@ fn main() {
 
 // Camera setup
 fn setup_camera(mut commands: Commands) {
-    commands.spawn((Camera2d, Msaa::Sample4));
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(200.0, 200.0, 200.0).looking_at(Vec3::ZERO, Vec3::Y),
+        GlobalTransform::default(),
+    ));
+
+    commands.spawn((
+        PointLight {
+            intensity: 800.0,
+            range: 1000.0,
+            ..default()
+        },
+        Transform::from_xyz(200.0, 400.0, 300.0),
+        GlobalTransform::default(),
+    ));
 }
 
 // Example plant
@@ -41,7 +55,7 @@ fn spawn_example_plant(mut commands: Commands) {
 
     commands.spawn((
         Plant::new(lsystem, 20.0, 3),
-        Transform::from_translation(Vec3::new(0.0, -200.0, 0.0)),
+        Transform::from_translation(Vec3::ZERO),
         GlobalTransform::default(),
         Visibility::default(),
     ));
