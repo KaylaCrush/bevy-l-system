@@ -5,7 +5,7 @@ use bevy_egui::{egui, EguiContexts, EguiPlugin, EguiPrimaryContextPass};
 
 // Step size and turn angle
 const STEP_SIZE: f32 = 20.0;
-const TURN_ANGLE: f32 = 90.0;
+const TURN_ANGLE: f32 = 22.0;
 
 // Green color
 const GREEN: Srgba = bevy::color::palettes::css::GREEN;
@@ -20,7 +20,6 @@ struct Plant {
     angle: f32,
     iteration: usize,
     max_iterations: usize,
-    root: Vec2,
 }
 
 impl Plant {
@@ -41,11 +40,6 @@ struct Turtle {
     angle: f32,
 }
 
-// Line segment
-struct LineSegment {
-    start: Vec2,
-    end: Vec2,
-}
 
 fn main() {
     App::new()
@@ -72,18 +66,18 @@ fn setup_plant(mut commands: Commands, windows: Query<&Window>) {
     let window = windows.single().expect("Window error");
     let bot_mid = Vec2::new(0.0, -window.height() / 2.0 + 20.0);
 
-    let axiom = "F+F+F+F".to_string();
+    let axiom = "X".to_string();
 
     commands.spawn((
         Plant {
             axiom: axiom.clone(),
             current_string: axiom.clone(),
-            rules: vec![('F', "F+F-F-F+F".to_string())],
+            rules: vec![('F', "FF".to_string()),
+                        ('X', "F-[[X]+X]+F[+FX]-X".to_string())],
             step_size: STEP_SIZE,
             angle: TURN_ANGLE,
             iteration: 0,
             max_iterations: 3,
-            root: bot_mid,
         },
         Transform::from_translation(Vec3::new(bot_mid.x, bot_mid.y, 0.0)),
         GlobalTransform::default(),
@@ -108,7 +102,6 @@ fn lsystem_step_system(mut query: Query<&mut Plant>) {
 
         // Optional scaling
         let growth_factor: f32 = 4.0;
-        plant.step_size = (100.0) / growth_factor.powi(plant.max_iterations as i32);
     }
 }
 
@@ -116,7 +109,7 @@ fn draw_lsystem(mut commands: Commands, plants: Query<(Entity, &Plant)>) {
     for (entity, plant) in &plants {
         commands.entity(entity).despawn_children();
 
-        let path = interpret_lsystem_to_path(&plant.current_string, plant.step_size, plant.angle, plant.root);
+        let path = interpret_lsystem_to_path(&plant.current_string, plant.step_size, plant.angle);
 
         commands.spawn((
             ShapeBuilder::with(&path)
@@ -127,7 +120,7 @@ fn draw_lsystem(mut commands: Commands, plants: Query<(Entity, &Plant)>) {
     }
 }
 
-fn interpret_lsystem_to_path(lsystem_string: &str, step_size: f32, turn_angle: f32, root: Vec2) -> ShapePath {
+fn interpret_lsystem_to_path(lsystem_string: &str, step_size: f32, turn_angle: f32) -> ShapePath {
     let mut turtle = Turtle { pos: Vec2::ZERO, angle: 90.0 };
     let mut stack = Vec::new();
     let mut path = ShapePath::new();
@@ -143,8 +136,8 @@ fn interpret_lsystem_to_path(lsystem_string: &str, step_size: f32, turn_angle: f
                 path = path.line_to(new_pos); // reassign after line_to
                 turtle.pos = new_pos;
             }
-            '+' => turtle.angle -= turn_angle,
-            '-' => turtle.angle += turn_angle,
+            '+' => turtle.angle += turn_angle,
+            '-' => turtle.angle -= turn_angle,
             '[' => stack.push(turtle),
             ']' => {
                 turtle = stack.pop().unwrap();
@@ -171,7 +164,6 @@ fn ui_system(mut contexts: EguiContexts, mut query: Query<&mut Plant>) -> Result
 
             ui.separator();
 
-            // Axiom input
             // Axiom input
             ui.label("Axiom:");
             ui.text_edit_singleline(&mut plant.axiom);
@@ -217,6 +209,12 @@ fn ui_system(mut contexts: EguiContexts, mut query: Query<&mut Plant>) -> Result
             if ui.button("Reset L-System").clicked() {
                 plant.reset();
             }
+            ui.separator();
+            ui.label("Current String:");
+            ui.label(plant.current_string.clone());
+
+
+
 
         }
     });
