@@ -15,12 +15,12 @@ pub struct Plant {
 
     /// Per-plant growth/drawing parameters
     pub step_size: f32,
-    pub thickness:f32,
+    pub root_thickness:f32,
 }
 
 impl Plant {
     /// Create a new plant from a given LSystem blueprint
-    pub fn new(lsystem: LSystem, step_size: f32, max_iterations: usize, thickness: f32) -> Self {
+    pub fn new(lsystem: LSystem, step_size: f32, max_iterations: usize, root_thickness: f32) -> Self {
         let axiom = lsystem.axiom.clone();
         Self {
             lsystem,
@@ -28,7 +28,7 @@ impl Plant {
             iteration: 0,
             max_iterations,
             step_size,
-            thickness,
+            root_thickness,
         }
     }
 

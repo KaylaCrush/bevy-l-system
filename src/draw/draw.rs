@@ -52,25 +52,6 @@ fn interpret_plant_string_3d(lsystem_string: &str, step_size: f32, turn_angle_de
     segments
 }
 
-// fn build_segment_mesh(segments: &[Segment]) -> Mesh {
-//     let mut positions = Vec::new();
-//     let mut indices = Vec::new();
-
-//     for (i, seg) in segments.iter().enumerate() {
-//         positions.push([seg.start.x, seg.start.y, seg.start.z]);
-//         positions.push([seg.end.x, seg.end.y, seg.end.z]);
-//         indices.push((i*2) as u32);
-//         indices.push((i*2 + 1) as u32);
-//     }
-
-//     let mut mesh = Mesh::new(PrimitiveTopology::LineList, RenderAssetUsages::default());
-//     mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
-//     mesh.insert_indices(Indices::U32(indices));
-//     mesh
-//}
-/// Build a single mesh from multiple segments, each as a stretched cube.
-/// `thickness` controls the width/depth of each branch.
-
 pub fn build_segment_mesh(segments: &[Segment], thickness:f32) -> Mesh {
     let mut positions: Vec<[f32; 3]> = Vec::new();
     let mut normals: Vec<[f32; 3]> = Vec::new();
@@ -146,7 +127,7 @@ pub fn draw_plant(
 
         let segments = interpret_plant_string_3d(&plant.current_string, plant.step_size, plant.lsystem.angle);
 
-        let mesh = build_segment_mesh(&segments, plant.thickness);
+        let mesh = build_segment_mesh(&segments, plant.root_thickness);
         let mesh_handle = meshes.add(mesh);
 
         commands.spawn((

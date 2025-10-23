@@ -13,9 +13,9 @@ pub fn plant_ui(mut contexts: EguiContexts, mut query: Query<&mut Plant>) {
                     .text("Step Size")
             );
 
-            ui.label("Branch Thickness:");
+            ui.label("Root Thickness:");
             ui.add(
-                egui::Slider::new(&mut plant.thickness, 1.0..=10.0)
+                egui::Slider::new(&mut plant.root_thickness, 1.0..=10.0)
                     .text("Thickness")
             );
             
