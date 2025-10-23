@@ -52,19 +52,85 @@ fn interpret_plant_string_3d(lsystem_string: &str, step_size: f32, turn_angle_de
     segments
 }
 
-fn build_segment_mesh(segments: &[Segment]) -> Mesh {
-    let mut positions = Vec::new();
-    let mut indices = Vec::new();
+// fn build_segment_mesh(segments: &[Segment]) -> Mesh {
+//     let mut positions = Vec::new();
+//     let mut indices = Vec::new();
 
-    for (i, seg) in segments.iter().enumerate() {
-        positions.push([seg.start.x, seg.start.y, seg.start.z]);
-        positions.push([seg.end.x, seg.end.y, seg.end.z]);
-        indices.push((i*2) as u32);
-        indices.push((i*2 + 1) as u32);
+//     for (i, seg) in segments.iter().enumerate() {
+//         positions.push([seg.start.x, seg.start.y, seg.start.z]);
+//         positions.push([seg.end.x, seg.end.y, seg.end.z]);
+//         indices.push((i*2) as u32);
+//         indices.push((i*2 + 1) as u32);
+//     }
+
+//     let mut mesh = Mesh::new(PrimitiveTopology::LineList, RenderAssetUsages::default());
+//     mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+//     mesh.insert_indices(Indices::U32(indices));
+//     mesh
+//}
+/// Build a single mesh from multiple segments, each as a stretched cube.
+/// `thickness` controls the width/depth of each branch.
+
+pub fn build_segment_mesh(segments: &[Segment], thickness:f32) -> Mesh {
+    let mut positions: Vec<[f32; 3]> = Vec::new();
+    let mut normals: Vec<[f32; 3]> = Vec::new();
+    let mut indices: Vec<u32> = Vec::new();
+
+    // Unit cube vertices (centered on Y-axis, from y=0 to y=1)
+    let cube_positions = [
+        Vec3::new(-0.5, 0.0, -0.5),
+        Vec3::new(0.5, 0.0, -0.5),
+        Vec3::new(0.5, 1.0, -0.5),
+        Vec3::new(-0.5, 1.0, -0.5),
+        Vec3::new(-0.5, 0.0, 0.5),
+        Vec3::new(0.5, 0.0, 0.5),
+        Vec3::new(0.5, 1.0, 0.5),
+        Vec3::new(-0.5, 1.0, 0.5),
+    ];
+
+    // Cube indices
+    let cube_indices: [u32; 36] = [
+        0,1,2, 2,3,0,   // back
+        4,5,6, 6,7,4,   // front
+        0,4,7, 7,3,0,   // left
+        1,5,6, 6,2,1,   // right
+        3,2,6, 6,7,3,   // top
+        0,1,5, 5,4,0,   // bottom
+    ];
+
+    let mut vertex_offset = 0;
+
+    for seg in segments {
+        let dir = seg.end - seg.start;
+        let length = dir.length();
+        if length == 0.0 { continue; }
+
+        // Rotation to align Y-axis to the segment
+        let rotation = Quat::from_rotation_arc(Vec3::Y, dir.normalize());
+        let translation = seg.start + dir * 0.5; // center along segment
+        let scale = Vec3::new(thickness, length, thickness);
+        let transform = Mat4::from_scale_rotation_translation(scale, rotation, translation);
+
+        // Transform and push cube vertices
+        for p in &cube_positions {
+            let v = transform * p.extend(1.0);
+            positions.push([v.x, v.y, v.z]);
+            // simple normals from local position, rotated
+            let n = rotation * p.normalize_or_zero();
+            normals.push([n.x, n.y, n.z]);
+        }
+
+        // Push indices with offset
+        for &i in &cube_indices {
+            indices.push(vertex_offset + i);
+        }
+
+        vertex_offset += cube_positions.len() as u32;
     }
 
-    let mut mesh = Mesh::new(PrimitiveTopology::LineList, RenderAssetUsages::default());
+    let mut mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default());
     mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+    mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
     mesh.insert_indices(Indices::U32(indices));
     mesh
 }
@@ -80,7 +146,7 @@ pub fn draw_plant(
 
         let segments = interpret_plant_string_3d(&plant.current_string, plant.step_size, plant.lsystem.angle);
 
-        let mesh = build_segment_mesh(&segments);
+        let mesh = build_segment_mesh(&segments, plant.thickness);
         let mesh_handle = meshes.add(mesh);
 
         commands.spawn((

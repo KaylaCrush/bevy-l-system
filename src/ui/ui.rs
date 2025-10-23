@@ -13,11 +13,18 @@ pub fn plant_ui(mut contexts: EguiContexts, mut query: Query<&mut Plant>) {
                     .text("Step Size")
             );
 
+            ui.label("Branch Thickness:");
+            ui.add(
+                egui::Slider::new(&mut plant.thickness, 1.0..=10.0)
+                    .text("Thickness")
+            );
+            
             ui.label("Max Iterations:");
             ui.add(
                 egui::Slider::new(&mut plant.max_iterations, 1..=10)
                     .text("Max Iterations")
             );
+            
             ui.label("Axiom:");
             ui.text_edit_singleline(&mut plant.lsystem.axiom);
 
