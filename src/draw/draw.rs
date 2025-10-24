@@ -58,17 +58,17 @@ pub fn build_segment_mesh(segments: &[Segment], thickness:f32) -> Mesh {
     let mut indices: Vec<u32> = Vec::new();
 
     // Unit cube vertices (centered on Y-axis, from y=0 to y=1)
+    // centered along Y
     let cube_positions = [
-        Vec3::new(-0.5, 0.0, -0.5),
-        Vec3::new(0.5, 0.0, -0.5),
-        Vec3::new(0.5, 1.0, -0.5),
-        Vec3::new(-0.5, 1.0, -0.5),
-        Vec3::new(-0.5, 0.0, 0.5),
-        Vec3::new(0.5, 0.0, 0.5),
-        Vec3::new(0.5, 1.0, 0.5),
-        Vec3::new(-0.5, 1.0, 0.5),
+        Vec3::new(-0.5, -0.5, -0.5),
+        Vec3::new(0.5, -0.5, -0.5),
+        Vec3::new(0.5, 0.5, -0.5),
+        Vec3::new(-0.5, 0.5, -0.5),
+        Vec3::new(-0.5, -0.5, 0.5),
+        Vec3::new(0.5, -0.5, 0.5),
+        Vec3::new(0.5, 0.5, 0.5),
+        Vec3::new(-0.5, 0.5, 0.5),
     ];
-
     // Cube indices
     let cube_indices: [u32; 36] = [
         0,1,2, 2,3,0,   // back
