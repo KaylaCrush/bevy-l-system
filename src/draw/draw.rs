@@ -11,18 +11,21 @@ use crate::plant::Plant;
 struct Turtle3D {
     pos: Vec3,
     rot: Quat,
+    thickness: f32,
 }
 
 #[derive(Clone, Copy)]
 struct Segment{
     start: Vec3,
     end: Vec3,
+    thickness: f32,
 }
 
-fn interpret_plant_string_3d(lsystem_string: &str, step_size: f32, turn_angle_deg: f32) -> Vec<Segment> {
+fn interpret_plant_string_3d(lsystem_string: &str, step_size: f32, turn_angle_deg: f32, root_thickness: f32) -> Vec<Segment> {
     let mut turtle = Turtle3D {
         pos: Vec3::ZERO,
         rot: Quat::IDENTITY, // facing +Y
+        thickness: root_thickness,
     };
     let mut stack = Vec::new();
     let mut segments = Vec::new();
@@ -34,9 +37,11 @@ fn interpret_plant_string_3d(lsystem_string: &str, step_size: f32, turn_angle_de
             'F' => {
                 // Move forward along local Y
                 let new_pos = turtle.pos + turtle.rot * Vec3::Y * step_size;
-                segments.push(Segment { start: turtle.pos, end: new_pos });
+                segments.push(Segment { start: turtle.pos, end: new_pos, thickness: turtle.thickness, });
                 turtle.pos = new_pos;
             }
+
+            '!' => turtle.thickness *= 0.8,
             '+' => turtle.rot *= Quat::from_rotation_z(-turn_rad), // roll clockwise
             '-' => turtle.rot *= Quat::from_rotation_z(turn_rad),  // roll counter-clockwise
             '&' => turtle.rot *= Quat::from_rotation_x(turn_rad),  // pitch down
@@ -52,7 +57,7 @@ fn interpret_plant_string_3d(lsystem_string: &str, step_size: f32, turn_angle_de
     segments
 }
 
-pub fn build_segment_mesh(segments: &[Segment], thickness:f32) -> Mesh {
+fn build_segment_mesh(segments: &[Segment], thickness:f32) -> Mesh {
     let mut positions: Vec<[f32; 3]> = Vec::new();
     let mut normals: Vec<[f32; 3]> = Vec::new();
     let mut indices: Vec<u32> = Vec::new();
@@ -89,7 +94,7 @@ pub fn build_segment_mesh(segments: &[Segment], thickness:f32) -> Mesh {
         // Rotation to align Y-axis to the segment
         let rotation = Quat::from_rotation_arc(Vec3::Y, dir.normalize());
         let translation = seg.start + dir * 0.5; // center along segment
-        let scale = Vec3::new(thickness, length, thickness);
+        let scale = Vec3::new(seg.thickness, length, seg.thickness);
         let transform = Mat4::from_scale_rotation_translation(scale, rotation, translation);
 
         // Transform and push cube vertices
@@ -109,7 +114,7 @@ pub fn build_segment_mesh(segments: &[Segment], thickness:f32) -> Mesh {
         vertex_offset += cube_positions.len() as u32;
     }
 
-    let mut mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::default());
+    let mut mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::RENDER_WORLD);
     mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
     mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
     mesh.insert_indices(Indices::U32(indices));
@@ -125,7 +130,7 @@ pub fn draw_plant(
     for (entity, plant) in &plants {
         commands.entity(entity).despawn_children();
 
-        let segments = interpret_plant_string_3d(&plant.current_string, plant.step_size, plant.lsystem.angle);
+        let segments = interpret_plant_string_3d(&plant.current_string, plant.step_size, plant.lsystem.angle, plant.root_thickness);
 
         let mesh = build_segment_mesh(&segments, plant.root_thickness);
         let mesh_handle = meshes.add(mesh);
@@ -134,6 +139,7 @@ pub fn draw_plant(
             Mesh3d(mesh_handle),
             MeshMaterial3d(materials.add(StandardMaterial {
                 base_color: Color::srgb(0.0, 1.0, 0.0),
+                cull_mode: None,
                 ..default()
             })),
             Transform::default(),

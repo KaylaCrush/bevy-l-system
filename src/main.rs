@@ -6,18 +6,20 @@ mod lsystem;
 mod plant;
 mod draw;
 mod ui;
+mod input;
 
 use lsystem::{LSystem, Rule};
 use plant::Plant;
 use draw::draw_plant;
 use ui::plant_ui;
+use input::{CameraController, InputPlugin};
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins))
+        .add_plugins((DefaultPlugins, InputPlugin))
         .add_plugins(EguiPlugin::default())
         .add_systems(Startup, (setup_camera, spawn_example_plant))
-        .add_systems(Update, (draw_plant, plant_step_system.run_if(input_just_pressed(KeyCode::Space))))
+        .add_systems(Update, (draw_plant, plant_step_system))
         .add_systems(EguiPrimaryContextPass, plant_ui)
         .run();
 }
@@ -26,7 +28,8 @@ fn main() {
 fn setup_camera(mut commands: Commands) {
     commands.spawn((
         Camera3d::default(),
-        Transform::from_xyz(200.0, 200.0, 200.0).looking_at(Vec3::ZERO, Vec3::Y),
+        CameraController::default(),
+        Transform::from_xyz(400.0, 400.0, 400.0).looking_at(Vec3::ZERO, Vec3::Y),
         GlobalTransform::default(),
     ));
 
@@ -54,10 +57,10 @@ fn spawn_example_plant(mut commands: Commands) {
     let lsystem = LSystem::new(
     "A", // axiom
     vec![
-        Rule::new('A', "[&FLA]/////[&FLA]///////[&FLA]"),
+        Rule::new('A', "[&FL!A]/////'[&FL!A]///////'[&FL!A]"),
         Rule::new('F', "S/////F"),
         Rule::new('S', "FL"),
-        Rule::new('L', "[^^{-f+f+f-|-f+f+f}]"),
+        Rule::new('L', "['''^^{-f+f+f-|-f+f+f}]"),
     ],
     22.5, // delta in degrees
 );
