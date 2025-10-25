@@ -16,11 +16,12 @@ pub struct Plant {
     /// Per-plant growth/drawing parameters
     pub step_size: f32,
     pub root_thickness:f32,
+    pub palette: Vec<Color>
 }
 
 impl Plant {
     /// Create a new plant from a given LSystem blueprint
-    pub fn new(lsystem: LSystem, step_size: f32, max_iterations: usize, root_thickness: f32) -> Self {
+    pub fn new(lsystem: LSystem, step_size: f32, max_iterations: usize, root_thickness: f32, palette: Vec<Color>) -> Self {
         let axiom = lsystem.axiom.clone();
         Self {
             lsystem,
@@ -29,6 +30,7 @@ impl Plant {
             max_iterations,
             step_size,
             root_thickness,
+            palette,
         }
     }
 
