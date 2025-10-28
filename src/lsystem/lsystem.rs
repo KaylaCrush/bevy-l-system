@@ -1,6 +1,7 @@
 use crate::lsystem::rule::Rule;
 
 /// Pure, stateless L-System blueprint
+#[derive (Clone)]
 pub struct LSystem {
     pub axiom: String,
     pub rules: Vec<Rule>,

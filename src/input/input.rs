@@ -27,9 +27,9 @@ impl Default for CameraController {
             pitch: -0.3,
             distance: 400.0,
             focus: Vec3::ZERO,
-            sensitivity: 0.005,
-            zoom_speed: 1.0,
-            pan_speed: 1.0,
+            sensitivity: 0.05,
+            zoom_speed: 2.0,
+            pan_speed: 2.0,
         }
     }
 }

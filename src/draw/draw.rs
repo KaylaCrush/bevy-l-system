@@ -68,12 +68,12 @@ fn interpret_plant(lsystem_string: &str, step_size: f32, turn_angle_deg: f32, ro
             }
             'f' => {
                 // forward but without drawing a segment
-                turtle.pos += turtle.rot * Vec3::Y * step_size;
+                turtle.pos += turtle.rot * Vec3::Y * (step_size/2.0);
                 if let Some(ref mut verts) = current_folio {
                     verts.push(turtle.pos);
                 }
             }
-            '!' => turtle.thickness *= 0.8,
+            '!' => turtle.thickness *= 0.9,
             '\'' => turtle.color_index += 1,
             '+' => turtle.rot *= Quat::from_rotation_z(-turn_rad), // roll clockwise
             '-' => turtle.rot *= Quat::from_rotation_z(turn_rad),  // roll counter-clockwise
@@ -224,9 +224,13 @@ pub fn draw_plant(
         commands.spawn((
             Mesh3d(mesh_handle),
             MeshMaterial3d(materials.add(StandardMaterial {
+                base_color: Color::srgb(0.2, 0.6, 0.25),
+                perceptual_roughness: 0.8, // very diffuse
+                metallic: 0.0,             // plants aren't metallic
+                reflectance: 0.2,          // subtle highlights
+                ..default()
                 //base_color: Color::srgb(0.0, 1.0, 0.0),
                 //cull_mode: None,
-                ..default()
             })),
             Transform::default(),
             GlobalTransform::default(),

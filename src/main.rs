@@ -18,7 +18,8 @@ fn main() {
     App::new()
         .add_plugins((DefaultPlugins, InputPlugin))
         .add_plugins(EguiPlugin::default())
-        .add_systems(Startup, (setup_camera, spawn_flower))
+        .insert_resource(ClearColor(Color::srgb(0.1, 0.1, 0.1)))
+        .add_systems(Startup, (setup_camera, setup_lighting, spawn_flowers))
         .add_systems(Update, (draw_plant, plant_step_system))
         .add_systems(EguiPrimaryContextPass, (plant_ui, palette_ui))
         .run();
@@ -32,47 +33,113 @@ fn setup_camera(mut commands: Commands) {
         Transform::from_xyz(400.0, 400.0, 400.0).looking_at(Vec3::ZERO, Vec3::Y),
         GlobalTransform::default(),
     ));
+}
 
+
+fn setup_lighting(mut commands: Commands) {
+    // Global ambient fill
+    commands.insert_resource(AmbientLight {
+        color: Color::srgb(0.45, 0.5, 0.55), // cool grayish-blue
+        brightness: 0.35,                    // gentle fill, not too bright
+        affects_lightmapped_meshes: false,
+    });
+
+    // Soft blue background (fake sky)
+    commands.insert_resource(ClearColor(Color::srgb(0.78, 0.86, 0.96)));
+
+    // "Sun" — main key light
     commands.spawn((
-        PointLight {
-            intensity: 800.0,
-            range: 1000.0,
+        DirectionalLight {
+            illuminance: 45_000.0, // realistic sunlight strength
+            shadows_enabled: true,
+            color: Color::srgb(1.0, 0.97, 0.92), // slightly warm white
             ..default()
         },
-        Transform::from_xyz(200.0, 400.0, 300.0),
-        GlobalTransform::default(),
+        Transform::from_rotation(Quat::from_euler(
+            EulerRot::XYZ,
+            -1.1, // downward angle
+            0.8,  // azimuth
+            0.0,
+        )),
+        //DirectionalLightShadowMap { size: 4096 }, // sharper shadows
+    ));
+
+    // Optional “sky bounce” fill light (simulates light from above)
+    commands.spawn((
+        DirectionalLight {
+            illuminance: 1500.0,
+            color: Color::srgb(0.6, 0.75, 1.0), // bluish
+            shadows_enabled: false,
+            ..default()
+        },
+        Transform::from_rotation(Quat::from_euler(
+            EulerRot::XYZ,
+            1.0,
+            -0.2,
+            0.0,
+        )),
+    ));
+
+    // Optional warm rim light from opposite direction
+    commands.spawn((
+        DirectionalLight {
+            illuminance: 3000.0,
+            color: Color::srgb(1.0, 0.8, 0.65),
+            shadows_enabled: false,
+            ..default()
+        },
+        Transform::from_rotation(Quat::from_euler(
+            EulerRot::XYZ,
+            0.4,
+            2.5,
+            0.0,
+        )),
     ));
 }
 
-fn spawn_flower(mut commands: Commands){
+fn spawn_flowers(mut commands: Commands) {
     let lsystem = LSystem::new(
-    "P", // axiom
-    vec![
-        Rule::new('P', "N+[P+O]--//[--L]N[++L]-[PO]++PO"),
-        Rule::new('N', "FS[//&&L][//^^L]FS"),
-        Rule::new('S', "SFS"),
-        Rule::new('L', "['{+f-ff-f+|+f-ff-f}]"),
-        Rule::new('O', "[&&&D'/W////W////W////W////W]"),
-        Rule::new('D', "FF"),
-        Rule::new('W', "['^F][{&&&&-f+f|-f+f}]"),
-    ],
-    18.0
-);
-    commands.spawn((
-        Plant::new(
-            lsystem,
-            2.0,
-            5,
-            1.0,
-            vec![
-                Color::srgb(0.2, 0.7, 0.3),   // green for leaves
-                Color::srgb(0.9, 0.5, 0.7),   // pink flower
-                Color::srgb(0.5, 0.35, 0.2),  // darker brown for pedicels
-            ]),
-        Transform::from_translation(Vec3::new(0.0,-200.0,0.0)),
-        GlobalTransform::default(),
-        Visibility::default(),
-    ));
+        "P", // axiom
+        vec![
+            Rule::new('P', "N+[P+O]--//[--L]N[++L]-[PO]++PO"),
+            Rule::new('N', "FS[//&&L][//^^L]FS"),
+            Rule::with_probability('S', "S[//&&L][//^^L]FS", 0.33),
+            Rule::with_probability('S', "SFS", 0.33),
+            Rule::with_probability('S', "S", 0.33),
+            Rule::new('L', "['{+f-f-f+|+f-f-f}]"),
+            Rule::new('O', "[&&&D'/W////W////W////W////W]"),
+            Rule::new('D', "FF"),
+            Rule::new('W', "['^^^F][{&&&&-f+f|-f+f}]"),
+        ],
+        18.0,
+    );
+
+    let grid_size = 4;
+    let spacing = 150.0; // adjust this to control distance between flowers
+
+    for x in 0..grid_size {
+        for z in 0..grid_size {
+            let x_pos = (x as f32 - (grid_size as f32 - 1.0) / 2.0) * spacing;
+            let z_pos = (z as f32 - (grid_size as f32 - 1.0) / 2.0) * spacing;
+
+            commands.spawn((
+                Plant::new(
+                    lsystem.clone(), // clone so each flower gets its own LSystem
+                    5.0,
+                    5,
+                    1.0,
+                    vec![
+                        Color::srgb(0.2, 0.7, 0.3),
+                        Color::srgb(0.3, 0.8, 0.7),
+                        Color::srgb(0.9, 0.0, 0.10),
+                    ],
+                ),
+                Transform::from_translation(Vec3::new(x_pos, -200.0, z_pos)),
+                GlobalTransform::default(),
+                Visibility::default(),
+            ));
+        }
+    }
 }
 
 

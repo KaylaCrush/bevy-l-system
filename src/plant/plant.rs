@@ -54,19 +54,22 @@ impl Plant {
             if matches.is_empty() {
                 next.push(c);
             } else {
-                // pick one based on probability
+                let total_prob: f32 = matches.iter().map(|r| r.probability).sum();
+                let mut roll = rng.random::<f32>() * total_prob; // scale 0..1 to 0..total_prob
                 let mut picked = None;
+
                 for rule in matches {
-                if rng.random::<f32>() < rule.probability {
+                    if roll < rule.probability {
                         picked = Some(rule);
-                        break; // stop at first successful probability check
+                        break;
+                    } else {
+                        roll -= rule.probability;
                     }
                 }
 
                 if let Some(rule) = picked {
                     next.push_str(&rule.successor);
                 } else {
-                    // no rule triggered, copy original
                     next.push(c);
                 }
             }
