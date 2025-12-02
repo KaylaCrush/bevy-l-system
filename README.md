@@ -2,7 +2,7 @@
 
 Procedural plant growth using deterministic and stochastic L-systems
 
-![preview](./assets/img/bevy-lsys.gif)
+![preview](./assets/img/bevy-lsys.png)
 
 ---
 
@@ -92,5 +92,6 @@ cargo run --release
 ---
 
 ## License
+
 
 MIT (or your preferred license)
