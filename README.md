@@ -94,5 +94,5 @@ cargo run --release
 ## License
 
 
-MIT (or your preferred license)
+MIT
 
